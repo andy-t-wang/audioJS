@@ -61,7 +61,7 @@ void program_body()
   Address src { nullptr, 0 };
   loop->add_rule( "new audio segment", stream_receiver, Direction::In, [&] {
     most_recent_audio_frame.resize( stream_receiver.recv( src, most_recent_audio_frame.mutable_buffer() ) );
-
+    //cout << most_recent_audio_frame.as_string_view() << endl;
     for ( auto it = clients->sockets.begin(); it != clients->sockets.end(); ) {
       try {
         // sleep(5);

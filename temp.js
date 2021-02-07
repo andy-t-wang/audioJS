@@ -1,58 +1,47 @@
 
-var audioCodec = "audio/webm; codecs=\"opus\"";
-function check_buffer(){
-    console.log(audio.readyState);
-}
 
-window.onload = function(e){
-    // request();
+window.onload = async function(e){
     audio = document.getElementById('audio');
     if (window.MediaSource) {
         var mediaSource = new MediaSource();
-        audio.src = URL.createObjectURL(mediaSource);
         mediaSource.addEventListener('sourceopen', sourceOpen);
-        console.log('done');
+        audio.src = URL.createObjectURL(mediaSource);
+        audio.load();
+        audio.play();
     } else {
         console.log("The Media Source Extensions API is not supported.")
     }
 }
-function request(){
-    const Http = new XMLHttpRequest();
-    const url='http://127.0.0.1:43952/';
-    Http.open("GET", url);
-    Http.send();
-    Http.onprogress = (e) => {
-        console.log(Http.response)
+
+async function sourceOpen(e) {
+    const audio = document.getElementById('audio');
+    var mime = "audio/webm; codecs=\"opus\"";
+    var mediaSource = this;
+    var first = true;
+    var sourceBuffer = mediaSource.addSourceBuffer(mime);
+    const response = await fetch('http://127.0.0.1:8080');
+    const reader = response.body.getReader();
+    sourceBuffer.addEventListener('abort', function(e) {
+        console.log('audio source buffer abort:', e);
+    });
+    sourceBuffer.addEventListener('error', function(e) {
+        console.log('audio source buffer error:', e);
+    });
+    while(true){
+        const {value, done} = await reader.read();
+        if(done){
+            break;
+        }
+        if(sourceBuffer.buffered.length > 0){
+            if(first && audio.played.length == 0){ // if you start after the start
+                first = false;
+                audio.currentTime = sourceBuffer.buffered.start(0);
+            }
+            console.log("buffered", sourceBuffer.buffered.start(0), sourceBuffer.buffered.end(0));
+        }
+        if(audio.played.length > 0){
+            console.log("played", audio.played.start(0), audio.played.end(0));
+        }
+        sourceBuffer.appendBuffer(value);
     }
 }
-setInterval(request(), 100);
-function sourceOpen(e) {
-    var audio = document.getElementById('audio');
-    URL.revokeObjectURL(audio.src);
-    var mime = 'audio/webm; codecs="opus"';
-    var mediaSource = e.target;
-    var sourceBuffer = mediaSource.addSourceBuffer(mime);
-    var videoUrl = 'http://127.0.0.1:8080';
-    fetchAB(videoUrl, function (buf) {
-        sourceBuffer.addEventListener('updateend', function (_) {
-          mediaSource.endOfStream();
-          console.log(mediaSource.activeSourceBuffers);
-          // will contain the source buffer that was added above,
-          // as it is selected for playing in the video player
-          video.play();
-          //console.log(mediaSource.readyState); // ended
-        });
-        sourceBuffer.appendBuffer(buf);
-    });
-}
-function fetchAB (url, cb) {
-    var xhr = new XMLHttpRequest;
-    xhr.open('get', url);
-    xhr.onprogress = function () {
-        // cb(xhr.response);
-        console.log(xhr.readyState);
-        console.log(xhr.responseText);
-    };
-    xhr.send();
-  };
-
