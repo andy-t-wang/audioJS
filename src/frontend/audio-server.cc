@@ -24,7 +24,7 @@ void program_body()
   stream_receiver.bind( { "127.0.0.1", 9014 } );
   StackBuffer<0, uint16_t, 65535> most_recent_audio_frame;
 
-  string header = "HTTP/1.1 200 OK\r\nContent-type: audio/webm; codecs=\"opus\"\r\n\r\n";
+  string header = "HTTP/1.1 200 OK\r\nContent-type: audio/webm; codecs=\"opus\"\r\nAccess-Control-Allow-Origin: *\r\n\r\n";
 
   /* start listening for HTTP connections */
   TCPSocket web_listen_socket;
@@ -61,9 +61,10 @@ void program_body()
   Address src { nullptr, 0 };
   loop->add_rule( "new audio segment", stream_receiver, Direction::In, [&] {
     most_recent_audio_frame.resize( stream_receiver.recv( src, most_recent_audio_frame.mutable_buffer() ) );
-
+    //cout << most_recent_audio_frame.as_string_view() << endl;
     for ( auto it = clients->sockets.begin(); it != clients->sockets.end(); ) {
       try {
+        // sleep(5);
         it->write( most_recent_audio_frame.as_string_view() );
         ++it;
       } catch ( const exception& e ) {
