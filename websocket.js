@@ -65,8 +65,9 @@ function handle_ws_msg(e) {
     } else {
         last_msg_recv_ts = Date.now();
         // console.log(last_msg_recv_ts);
-        const msg_ts = e.timeStamp;
+        // const msg_ts = e.timeStamp;
         const server_msg = e.data;
+        queue.push(server_msg);
     }
   }
 
@@ -91,7 +92,7 @@ function abuf_update() {
     if (abuf && !abuf.updating && queue.length > 0) {
       var next_data= queue.shift();
       abuf.appendBuffer(next_data);
-      // send back current buffer as ack 
+      // send back last message added to current buffer as ack 
       socket.send(JSON.stringify({cur_buf: abuf.buffered.end(0)}));
     }
   }
